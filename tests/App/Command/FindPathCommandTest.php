@@ -2,15 +2,24 @@
 
 namespace App\Command;
 
+use App\Service\File\CsvLoader;
 use App\Tests\Util;
-use PHPUnit\Framework\TestCase;
+use ReflectionException;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-class FindPathCommandTest extends TestCase
+class FindPathCommandTest extends KernelTestCase
 {
-    public function testIsWaitForInput()
-    {
-        $this->assertFalse(Util::callMethod(new FindPathCommand(),'isWaitForInput',['input'=>'quit']));
-
-        $this->assertTrue(Util::callMethod(new FindPathCommand(),'isWaitForInput',['input'=>'a b 100']));
-    }
+    /**
+     * Given a "quit" should return false, otherwise return true.
+     *
+     * @throws ReflectionException
+     */
+        public function testIsWaitForInput()
+        {
+            self::bootKernel();
+            $container = static::getContainer();
+            $csvLoader = $container->get(CsvLoader::class);
+            $this->assertFalse(Util::callMethod(new FindPathCommand($csvLoader),'isWaitForInput',['input'=>'quit']));
+            $this->assertTrue(Util::callMethod(new FindPathCommand($csvLoader),'isWaitForInput',['input'=>'a b 100']));
+        }
 }
