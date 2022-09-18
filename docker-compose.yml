@@ -1,0 +1,19 @@
+version: "3.7"
+services:
+    
+  find_path:
+    build:
+      context: './apache/'
+    networks:
+      - backend
+    ports:
+      - "8000:80"  
+    volumes:
+      - '.:/var/www/html/'
+    container_name: find_path
+
+    
+networks:
+  backend:
+    driver: bridge
+
