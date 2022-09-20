@@ -57,22 +57,20 @@ class FindPathCommand extends Command
      */
     protected function processInput(array $latencyInfoFromCSV)
     {
-        fscanf(STDIN, "%s %s %d", $fromDevice, $toDevice, $latency);
-        $result = $this->deviceManager->shortestPath($fromDevice, $toDevice, $this->deviceManager->storeAsGraph($latencyInfoFromCSV));
-        if ($result['latency'] > $latency) {
-            $output = 'output: Path not found';
-        } else {
-            $path = '';
-            $stack = $result['path'];
-            $stack->rewind();
-            while ($stack->valid()) {
-                $path .= $stack->current() . ' => ';
-                $stack->next();
+        echo "Input: ";
+        fscanf(STDIN, "%s %s %d", $from, $to, $latency);
+        if (empty($from) || empty($to) || empty($latency) || !is_int($latency)) {
+            if (isset($from))
+                $from = strtoupper($from);
+            if ($from !== self::QUIT) {
+                $this->output->writeln('Output: Input error... Syntax: "[from] [to] [latency]", type "QUIT" to terminate script');
             }
-            $output = sprintf("output:%s%s", $path, $result['latency']);
+        } else {
+            $result = $this->deviceManager->shortestPath($from, $to, $this->deviceManager->storeAsGraph($latencyInfoFromCSV));
+            $output = $result['latency'] > $latency ? 'output: Path not found' : $this->formatOutput($result);
+            $this->output->writeln($output);
         }
-        $this->output->writeln($output);
-        if ($this->isWaitForInput($fromDevice)) {
+        if ($this->isWaitForInput($from)) {
             $this->processInput($latencyInfoFromCSV);
         }
     }
@@ -85,7 +83,9 @@ class FindPathCommand extends Command
      */
     protected function isWaitForInput($input): bool
     {
-        return strtoupper($input) !== self::QUIT;
+        if (isset($input))
+            $input = strtoupper($input);
+        return $input !== self::QUIT;
     }
 
     /**
@@ -94,5 +94,23 @@ class FindPathCommand extends Command
     protected function configure(): void
     {
         $this->addArgument('file_path', InputArgument::REQUIRED, 'Input of the csv file path is a must.');
+    }
+
+    /**
+     * Format the output
+     *
+     * @param array $result
+     * @return string
+     */
+    private function formatOutput(array $result): string
+    {
+        $path = '';
+        $stack = $result['path'];
+        $stack->rewind();
+        while ($stack->valid()) {
+            $path .= $stack->current() . ' => ';
+            $stack->next();
+        }
+        return sprintf("output:%s%s", $path, $result['latency']);
     }
 }
