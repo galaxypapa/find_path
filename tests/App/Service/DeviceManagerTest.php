@@ -7,10 +7,6 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 class DeviceManagerTest extends KernelTestCase
 {
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     /**
      * The method should store the graph as following
