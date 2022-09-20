@@ -3,6 +3,7 @@
 namespace App\Command;
 
 
+use App\Service\DeviceManagerInterface;
 use App\Service\File\FileLoaderInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -20,16 +21,19 @@ class FindPathCommand extends Command
 {
     const QUIT = 'QUIT';
     protected FileLoaderInterface $fileLoader;
+    protected DeviceManagerInterface $deviceManager;
+    protected OutputInterface $output;
 
-    public function __construct(FileLoaderInterface $fileLoader)
+    public function __construct(FileLoaderInterface $fileLoader, DeviceManagerInterface $deviceManager)
     {
-        $this->fileLoader = $fileLoader;
         parent::__construct();
+        $this->fileLoader = $fileLoader;
+        $this->deviceManager = $deviceManager;
     }
 
     /**
      * Execute the command for finding the path from a given CSV file
-     * Eg, php bin/console  app:find-path ./latency.csv
+     * Eg, php bin/console  app:find-path latency.csv
      *
      * @param InputInterface $input
      * @param OutputInterface $output
@@ -37,11 +41,12 @@ class FindPathCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $this->output = $output;
         $output->writeln('Program start');
         $output->writeln('CSV file path: ' . $input->getArgument('file_path'));
-        $devicePaths = $this->fileLoader->load($input->getArgument('file_path'));
+        $latencyInfoFromCSV = $this->fileLoader->load($input->getArgument('file_path'));
         $output->writeln('Please input the format as "A F 1000" & followed by ENTER key to find the path');
-        $this->waitForProcess();
+        $this->processInput($latencyInfoFromCSV);
         return Command::SUCCESS;
     }
 
@@ -50,11 +55,25 @@ class FindPathCommand extends Command
      *
      *
      */
-    protected function waitForProcess()
+    protected function processInput(array $latencyInfoFromCSV)
     {
-        fscanf(STDIN, "%s %s %d", $firstArg, $secondArg, $thirdArg);
-        if ($this->isWaitForInput($firstArg)) {
-            $this->waitForProcess();
+        fscanf(STDIN, "%s %s %d", $fromDevice, $toDevice, $latency);
+        $result = $this->deviceManager->shortestPath($fromDevice, $toDevice, $this->deviceManager->storeAsGraph($latencyInfoFromCSV));
+        if ($result['latency'] > $latency) {
+            $output = 'output: Path not found';
+        } else {
+            $path = '';
+            $stack = $result['path'];
+            $stack->rewind();
+            while ($stack->valid()) {
+                $path .= $stack->current() . ' => ';
+                $stack->next();
+            }
+            $output = sprintf("output:%s%s", $path, $result['latency']);
+        }
+        $this->output->writeln($output);
+        if ($this->isWaitForInput($fromDevice)) {
+            $this->processInput($latencyInfoFromCSV);
         }
     }
 

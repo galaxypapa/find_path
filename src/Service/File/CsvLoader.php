@@ -5,6 +5,7 @@ namespace App\Service\File;
 class CsvLoader implements FileLoaderInterface
 {
 
+
     /**
      * Load data into array from a given csv file.
      *
@@ -13,12 +14,12 @@ class CsvLoader implements FileLoaderInterface
      */
     function load(string $path): array
     {
-        $devicePaths = [];
+        $arr = [];
         $file = fopen($path, 'r');
         while (($result = fgetcsv($file)) !== false) {
-            $devicePaths[] = $result;
+            $arr[] = $result;
         }
         fclose($file);
-        return $devicePaths;
+        return $arr;
     }
 }
